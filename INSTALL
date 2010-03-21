@@ -1,0 +1,65 @@
+.h1 Draft intallation instructions
+
+.h2 /etc/exim4/....
+
+<pre>
+dc_other_hostnames='mail2 ;...'
+
+MAIN_TLS_ENABLE = 'yes'
+domainlist mail2_domains = mail2
+
+acl_check_rcpt:
+
+  deny
+    domains = +mail2_domains
+    !authenticated = *
+    message = Authentication is required for domain
+
+begin routers
+
+mail2:
+  debug_print = "R: mail2 for $local_part@$domain"
+  driver = accept
+  domains = +mail2_domains
+  transport = mail2_pipe
+  require_files = /etc/maildroprc:+/usr/bin/maildrop:+/usr/local/bin/mail2drop.py
+  no_verify
+  no_expn
+
+begin transports
+
+mail2_pipe:
+  debug_print = "T: mail2_pipe for  $local_part $authenticated_id"
+  driver = pipe
+  path = "/bin:/usr/bin:/usr/local/bin"
+  command = /usr/local/bin/mail2drop.py $authenticated_id $local_part
+  return_path_add
+  delivery_date_add
+  envelope_to_add
+</pre>
+
+.h2 /etc/maildroprc
+
+<pre>
+DEFAULT="$HOME/Maildir"
+if ( "$1" == "mail2" )
+{
+	to $DEFAULT/.$2
+}
+</pre>
+
+.h2 Packages
+
+<pre>
+aptitude install courier-imap maildrop
+cp mail2drop.py /usr/local/bin
+</pre>
+
+.h2 Ceate a folder
+
+under user:
+<pre>
+$ maildirmake
+$ maildirmake -f folder Maildir
+$ echo INBOX.folder >>Maildir/courierimapsubscribed
+</pre>
